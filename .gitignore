@@ -1,0 +1,6 @@
+*.pyc
+*.out
+parsetab.py
+asm
+parse_asm
+
