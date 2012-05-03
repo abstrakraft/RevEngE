@@ -1,3 +1,5 @@
+import expr
+
 class ArgVal(object):
 	def __init__(self):
 		pass
@@ -33,13 +35,16 @@ class ArgInt(object):
 		raise TypeError('invalid store to an int')
 
 	def get_value(self, proc_state):
-		return value
+		return expr.NumericValue(self.value)
+
+	def __str__(self):
+		return str(self.value)
 
 class ArgReg(object):
 	def __init__(self, val):
 		self.val = val.lower()
 		self.mod = False
-		self.indirect = True
+		self.indirect = False
 
 	def set_pre_decrement(self):
 		self.mod = '-'
@@ -52,11 +57,11 @@ class ArgReg(object):
 
 	def pre_effect(self, proc_state):
 		if self.mod == '-':
-			proc_state[self.val] -= 1
+			proc_state[self.val] -= expr.NumericValue(1)
 
 	def post_effect(self, proc_state):
 		if self.mod == '+':
-			proc_state[self.val] += 1
+			proc_state[self.val] += expr.NumericValue(1)
 
 	def store_value(self, proc_state, value):
 		if self.indirect:
@@ -64,12 +69,24 @@ class ArgReg(object):
 		else:
 			proc_state[self.val] = value
 
-	def get_value(self, proc_state, value):
+	def get_value(self, proc_state):
 		tmp = proc_state[self.val]
 		if self.indirect:
 			return proc_state.Mem[tmp]
 		else:
 			return tmp
+
+	def __str__(self):
+		ret = ''
+		if self.indirect:
+			ret += '@'
+		if self.mod == '-':
+			ret += '-'
+		ret += self.val
+		if self.mod == '+':
+			ret += '+'
+
+		return ret
 
 class ArgSum(object):
 	def __init__(self, arg1, arg2):
@@ -89,3 +106,6 @@ class ArgSum(object):
 
 	def get_value(self, proc_state):
 		return proc_state.Mem[self.get_address(proc_state)]
+
+	def __str__(self):
+		return '(%s,%s)' % self.args

@@ -1,38 +1,51 @@
-import args
+import ply.lex
+import ply.yacc
 
-tokens = ('BIN_OP', 'TYPE_SPEC', 'INTEGER', 'GENREG', 'PC', 'GBR')
+import arg
+
+tokens = ('UN_OP', 'BIN_OP', 'TYPE_SPEC', 'INTEGER', 'GENREG', 'PC', 'GBR')
 literals = '().,@+-'
 t_ignore = ' \t'
 
 t_UN_OP = r'(movt)|(cmp/(pl)|(pz))|(dt)|(tas.b)|(rotr|(cl)|(cr))|(shal|r)|(shll|r(2|8|(16))?)'
-t_BIN_OP = r'(mova?)|(swap)|(xtrct)|(add(c|v)?)|(cmp/(eq)|(hs)|(ge)|(hi)|(gt)|(str))|(div1|(0s)|s|u)|(exts|u)|(mac)|(mul(s|u)?)|(negc?)|(sub(c|v)?)|' +
+t_BIN_OP = r'(mova?)|(swap)|(xtrct)|(add(c|v)?)|(cmp/(eq)|(hs)|(ge)|(hi)|(gt)|(str))|(div1|(0s)|s|u)|(exts|u)|(mac)|(mul(s|u)?)|(negc?)|(sub(c|v)?)|' + \
 	       r'(and)|(not)|(or)|(tst)|(xor)|(ldc|s)|(stc|s)'
 t_TYPE_SPEC = r'b|w|l'
-t_INTEGER = r'(\#[0-9]*)|(0x[0-9a-fA-F]*)'
+
+start = 'statement'
+
+def t_INTEGER(t):
+	'''(\#[0-9]*)|(0x[0-9a-fA-F]*)'''
+	t.value = arg.ArgInt(t.value)
+	return t
 
 def t_GENREG(t):
 	'''[rR]1?[0-9]'''
-	t.value = args.ArgReg(t.value)
+	t.value = arg.ArgReg(t.value)
 	return t
 
 def t_PC(t):
 	'''(pc)|(PC)'''
-	t.value = args.ArgReg(t.value)
+	t.value = arg.ArgReg(t.value)
 	return t
 
 def t_GBR(t):
 	'''(gbr)|(GBR)'''
-	t.value = args.ArgReg(t.value)
+	t.value = arg.ArgReg(t.value)
 	return t
 
 def t_error(t):
     print "Illegal character '%s'" % t.value[0]
     t.lexer.skip(1)
 
+def p_statement(p):
+	'''statement : bin_op_statement'''
+	p[0] = p[1]
+
 def p_bin_op_statement(p):
 	'''bin_op_statement : bin_op_spec src ',' dst'''
 	p[0] = p[1]
-	p[1].extend((p[2], p[4]))
+	p[0].append((p[2], p[4]))
 
 def p_bin_op_spec(p):
 	'''bin_op_spec : BIN_OP '.' TYPE_SPEC
@@ -40,7 +53,7 @@ def p_bin_op_spec(p):
 	if len(p) == 4:
 		p[0] = [p[1], p[3]]
 	else:
-		p[0] = [p[1]]
+		p[0] = [p[1], None]
 
 def p_dst(p):
 	'''dst : indirect_reg
@@ -94,9 +107,8 @@ def p_sum(p):
 	       | '@' '(' GENREG ',' GBR ')' '''
 	p[0] = ArgSum(p[3], p[5])
 
-import ply.lex
-import ply.yacc
-ply.lex.lex()
-parser = ply.yacc.yacc()
 
-print parser.parse('mov.w R1,@R2')
+ply.lex.lex()
+asm_parser = ply.yacc.yacc()
+
+#print parser.parse('mov.w R1,@R2')

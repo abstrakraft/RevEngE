@@ -14,9 +14,12 @@ def main():
 	#Alex = asm.AsmListing.import_file('alex_disassembly.asm')
 	#main_entry = (Alex[0].value << 16) | Alex[1].value
 	proc_state = proc.SH7058_State()
-	test = asm.AsmListing.import_file('test.asm')
+	test = asm.AsmListing.import_file('asm/test.asm')
 
 	for c in test.code:
 		c.execute(proc_state)
 
 	return proc_state
+
+if __name__ == '__main__':
+	print main()

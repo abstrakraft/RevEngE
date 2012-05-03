@@ -73,7 +73,7 @@ class UnaryOp(Expr):
 		return self.func(self.op1)
 
 	def can_eval(self):
-		return self.op1.can_eval()
+		return self.func and self.op1.can_eval()
 
 class BinaryOp(Expr):
 	def __init__(self, op1, op2):
@@ -88,7 +88,7 @@ class BinaryOp(Expr):
 		return self.func(self.op1, self.op2)
 
 	def can_eval(self):
-		return self.op1.can_eval() and self.op2.can_eval()
+		return self.func and self.op1.can_eval() and self.op2.can_eval()
 
 for (name, symbol, func, method) in binary_ops:
 	vars()[name] = type(name, (BinaryOp,), {'format': '(%s ' + symbol + ' %s)', 'func': func})
@@ -100,3 +100,7 @@ class SignExtendByteOp(UnaryOp):
 class SignExtendWordOp(UnaryOp):
 	format = "exts.w(%s)"
 	func = functools.partial(operator.and_, 0xffff)
+
+class DereferenceOp(UnaryOp):
+	format = "*(%s)"
+	func = None

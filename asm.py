@@ -1,80 +1,15 @@
 import sys
-import re
+import parse
 import expr
 
-class AsmArg(object):
-	INDIRECT = 4
-	PREDECREMENT = 8
-	POSTINCREMENT = 16
-
-	def __init__(self, arg):
-		self.arg = arg
-		self.parse()
-
-	def parse(self):
-		arg = self.arg
-		self.type = 0
-		if arg[0] == '#':
-			self.type = self.LITERAL
-			val = int(arg[1:])
-			self.val1 = lambda ps, val=val: val
-			self.val2 = lambda ps: 0
-		elif arg[:1] == '0x':
-			self.type = self.LITERAL
-			self.val = int(arg[2:], 16)
-		else:
-			parse_register_expr(self, arg)
-			#raise NotImplementedError('Argument type %s not implemented for parse' % arg)
-
-	def parse_register_expr(self, arg):
-		if arg[0].lower() == 'r':
-			self.type |= self.REGISTER
-			self.val = int(arg[1:])
-
-	def __str__(self):
-		return self.arg
-
-	def pre_effects(self, proc_state):
-		pass
-
-	def post_effects(self, proc_state):
-		pass
-
-	def get_value(self, proc_state):
-		if self.type == self.LITERAL:
-			return self.val
-		elif self.type == self.REGISTER:
-			return proc_state.GPR[self.val]
-		else:
-			raise NotImplementedError('Argument type %s not implemented for get' % self.arg)
-
-	def store_value(self, proc_state, value):
-		if self.type == self.LITERAL:
-			raise TypeError('unable to store to a literal')
-		elif self.type == self.REGISTER:
-			proc_state.GPR[self.val] = value
-		else:
-			raise NotImplementedError('Argument type %s not implemented for store' % self.arg)
-
 class AsmLine(object):
-	re_asm_line = \
-		'(?P<inst>[^\s]*)' \
-			+'(\s*((?P<a>[^(,]*(\([^)]*\))?)\s*' \
-				+'(,\s*(?P<b>[^(,]*(\([^)]*\))?)\s*' \
-					+'(,\s*(?P<c>[^(,]*(\([^)]*\))?))' \
-				+'?)' \
-			+'?)?)'
-	re_args = re.compile(re_asm_line)
-
-	def __init__(self, address, val, instruction, args, attr):
+	def __init__(self, address, val, instruction, spec, args, attr):
 		self.address = address
 		self.val = val
 		self.instruction = instruction
+		self.spec = spec
 		self.args = args
 		self.attr = attr
-
-		self.instruction = self.instruction
-		self.args = map(AsmArg, args)
 
 	@classmethod
 	def import_listing(cls, asm_listing):
@@ -83,12 +18,9 @@ class AsmLine(object):
 			fields.append('{}')
 		elif fields[3] == "":
 			fields[3] = '{}'
-	
-		m = cls.re_args.match(fields[2])
-		inst = m.group('inst')
-		args = filter(None, [m.group('a'), m.group('b'), m.group('c')])
 
-		return cls(int(fields[0][:-1], 16), int(fields[1], 16), inst, args, eval(fields[3]))
+		[inst, spec, args] = parse.asm_parser.parse(fields[2])
+		return cls(int(fields[0][:-1], 16), int(fields[1], 16), inst, spec, args, eval(fields[3]))
 
 	def export_listing(self):
 		asm_string = self.export_string()
@@ -113,6 +45,13 @@ class AsmLine(object):
 			v1 = self.args[0].get_value(proc_state)
 			v2 = self.args[1].get_value(proc_state)
 			self.args[1].store_value(proc_state, v1|v2)
+		elif self.instruction == 'mov':
+			if self.spec:
+				v1 = self.args[0].get_value(proc_state)
+				self.args[1].store_value(proc_state, proc_state.Mem[v1])
+			else:
+				v1 = self.args[0].get_value(proc_state)
+				self.args[1].store_value(proc_state, v1)
 		else:
 			raise NotImplementedError('instruction %s not implemented for execution' % self.instruction)
 
@@ -214,5 +153,5 @@ class AsmPattern(object):
 
 
 if __name__ == '__main__':
-	code = AsmListing.import_file('alex_disassembly.asm')
-	code.export_file('alex_export.asm')
+	code = AsmListing.import_file('asm/test.asm')
+	#code.export_file('alex_export.asm')

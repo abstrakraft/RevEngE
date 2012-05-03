@@ -1,6 +1,4 @@
 import collections
-import functools
-
 import expr
 
 class Store(object):
@@ -33,14 +31,39 @@ class RegFile(Store):
 	def __setitem__(self, key, value):
 		self.reg[key] = value
 
+	def __str__(self):
+		return '[' + ', '.join(map(str, self.reg)) + ']'
+
 class MemFile(Store):
 	init_sp = 0xffffbfa0
 
 	def __init__(self):
-		self.mem = collections.defaultdict(functools.partial(expr.UndefinedValue()))
+		self.definite_mem = {}
+		self.symbolic_mem = {}
 
-	def __getitem__(self, key):
-		return self.mem[key]
+	def __getitem__(self, address):
+		if address.can_eval():
+			addr_val = address.eval()
+			if addr_val in self.definite_mem:
+				val = self.definite_mem[addr_val]
+			else:
+				val = expr.DereferenceOp(addr_val)
+		else:
+			if address in self.symbolic_mem:
+				val = self.symbolc_mem[address]
+			else:
+				val = expr.DereferenceOp(address)
 
-	def __setitem__(self, key, value):
-		self.mem[key] = value
+		return val
+
+	def __setitem__(self, address, val):
+		if address.can_eval():
+			self.definite_mem[address.eval()] = val
+		else:
+			self.symbolic_mem[address] = val
+
+	def initialize_mem(self):
+		pass
+
+	def __str__(self):
+		return '<definite_mem = %s, symbolic_mem = %s>' % (self.definite_mem, self.symbolic_mem)
