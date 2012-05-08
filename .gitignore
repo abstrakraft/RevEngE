@@ -1,5 +1,3 @@
 *.pyc
 *.out
 parsetab.py
-parse_asm
-

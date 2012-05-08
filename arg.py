@@ -5,10 +5,10 @@ class ArgVal(object):
 		pass
 
 	def pre_effect(self, proc_state):
-		raise Exception('abstract function')
+		pass
 
 	def post_effect(self, proc_state):
-		raise Exception('abstract function')
+		pass
 
 	def store_value(self, proc_state, value):
 		raise Exception('abstract function')
@@ -16,20 +16,15 @@ class ArgVal(object):
 	def get_value(self, proc_state):
 		raise Exception('abstract function')
 
-class ArgInt(object):
+class ArgInt(ArgVal):
 	def __init__(self, value):
+		super(ArgVal, self).__init__()
 		if isinstance(value, basestring):
 			if value[0] == '#':
 				value = value[1:]
 			self.value = int(value, 0)
 		else:
 			self.value = value
-
-	def pre_effect(self, proc_state):
-		pass
-
-	def post_effect(self, proc_state):
-		pass
 
 	def store_value(self, proc_state, value):
 		raise TypeError('invalid store to an int')
@@ -40,8 +35,23 @@ class ArgInt(object):
 	def __str__(self):
 		return str(self.value)
 
-class ArgReg(object):
+class ArgMem(ArgVal):
+	def __init__(self, address):
+		super(ArgMem, self).__init__()
+		self.address = expr.NumericValue(address)
+
+	def store_value(self, proc_state, value):
+		proc_state.Mem[self.address] = value
+
+	def get_value(self, proc_state):
+		return proc_state.Mem[self.address]
+
+	def __str__(self):
+		return hex(self.address.val)
+
+class ArgReg(ArgVal):
 	def __init__(self, val):
+		super(ArgReg, self).__init__()
 		self.val = val.lower()
 		self.mod = False
 		self.indirect = False
@@ -88,8 +98,9 @@ class ArgReg(object):
 
 		return ret
 
-class ArgSum(object):
+class ArgSum(ArgVal):
 	def __init__(self, arg1, arg2):
+		super(ArgSum, self).__init__()
 		self.args = [arg1, arg2]
 
 	def pre_effect(self, proc_state):

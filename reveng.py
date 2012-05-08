@@ -13,11 +13,12 @@ class Block(object):
 def main():
 	#Alex = asm.AsmListing.import_file('alex_disassembly.asm')
 	#main_entry = (Alex[0].value << 16) | Alex[1].value
-	proc_state = proc.SH7058_State()
+	proc_state = proc.SH7058()
 	test = asm.AsmListing.import_file('asm/test.asm')
 
+	proc_state.function_init()
 	for c in test.code:
-		c.execute(proc_state)
+		proc_state.execute(c)
 
 	return proc_state
 

@@ -3,7 +3,7 @@ import expr
 
 class Store(object):
 	def __init__(self):
-		super(Store, self).__init__()
+		pass
 
 class RegFile(Store):
 	def __init__(self, reset=False, function_init=False):
@@ -38,8 +38,15 @@ class MemFile(Store):
 	init_sp = 0xffffbfa0
 
 	def __init__(self):
+		super(MemFile, self).__init__()
 		self.definite_mem = {}
 		self.symbolic_mem = {}
+
+	def function_init(self):
+		pass
+
+	def initialize_mem(self):
+		pass
 
 	def __getitem__(self, address):
 		if address.can_eval():
@@ -61,9 +68,6 @@ class MemFile(Store):
 			self.definite_mem[address.eval()] = val
 		else:
 			self.symbolic_mem[address] = val
-
-	def initialize_mem(self):
-		pass
 
 	def __str__(self):
 		return '<definite_mem = %s, symbolic_mem = %s>' % (self.definite_mem, self.symbolic_mem)

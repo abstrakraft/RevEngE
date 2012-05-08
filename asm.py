@@ -19,7 +19,7 @@ class AsmLine(object):
 		elif fields[3] == "":
 			fields[3] = '{}'
 
-		[inst, spec, args] = parse.asm_parser.parse(fields[2])
+		(inst, spec, args) = parse.asm_parser.parse(fields[2])
 		return cls(int(fields[0][:-1], 16), int(fields[1], 16), inst, spec, args, eval(fields[3]))
 
 	def export_listing(self):
@@ -31,29 +31,6 @@ class AsmLine(object):
 
 	def export_string(self):
 		return self.instruction + (self.args and (' ' + ','.join(map(str, self.args))) or '')
-
-	def execute(self, proc_state):
-		if self.instruction == 'add':
-			v1 = self.args[0].get_value(proc_state)
-			v2 = self.args[1].get_value(proc_state)
-			self.args[1].store_value(proc_state, v1+v2)
-		elif self.instruction == 'and':
-			v1 = self.args[0].get_value(proc_state)
-			v2 = self.args[1].get_value(proc_state)
-			self.args[1].store_value(proc_state, v1&v2)
-		elif self.instruction == 'or':
-			v1 = self.args[0].get_value(proc_state)
-			v2 = self.args[1].get_value(proc_state)
-			self.args[1].store_value(proc_state, v1|v2)
-		elif self.instruction == 'mov':
-			if self.spec:
-				v1 = self.args[0].get_value(proc_state)
-				self.args[1].store_value(proc_state, proc_state.Mem[v1])
-			else:
-				v1 = self.args[0].get_value(proc_state)
-				self.args[1].store_value(proc_state, v1)
-		else:
-			raise NotImplementedError('instruction %s not implemented for execution' % self.instruction)
 
 class AsmListing(object):
 	def __init__(self, code):

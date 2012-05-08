@@ -3,11 +3,11 @@ import ply.yacc
 
 import arg
 
-tokens = ('UN_OP', 'BIN_OP', 'TYPE_SPEC', 'INTEGER', 'GENREG', 'PC', 'GBR')
+tokens = ('BIN_OP', 'TYPE_SPEC', 'INTEGER', 'ADDRESS', 'GENREG', 'PC', 'GBR')
 literals = '().,@+-'
 t_ignore = ' \t'
 
-t_UN_OP = r'(movt)|(cmp/(pl)|(pz))|(dt)|(tas.b)|(rotr|(cl)|(cr))|(shal|r)|(shll|r(2|8|(16))?)'
+#t_UN_OP = r'(movt)|(cmp/(pl)|(pz))|(dt)|(tas.b)|(rotr|(cl)|(cr))|(shal|r)|(shll|r(2|8|(16))?)'
 t_BIN_OP = r'(mova?)|(swap)|(xtrct)|(add(c|v)?)|(cmp/(eq)|(hs)|(ge)|(hi)|(gt)|(str))|(div1|(0s)|s|u)|(exts|u)|(mac)|(mul(s|u)?)|(negc?)|(sub(c|v)?)|' + \
 	       r'(and)|(not)|(or)|(tst)|(xor)|(ldc|s)|(stc|s)'
 t_TYPE_SPEC = r'b|w|l'
@@ -15,8 +15,13 @@ t_TYPE_SPEC = r'b|w|l'
 start = 'statement'
 
 def t_INTEGER(t):
-	'''(\#[0-9]*)|(0x[0-9a-fA-F]*)'''
+	'''[1-9][0-9]*'''
 	t.value = arg.ArgInt(t.value)
+	return t
+
+def t_ADDRESS(t):
+	'''0x[0-9a-fA-F]+'''
+	t.value = arg.ArgMem(t.value)
 	return t
 
 def t_GENREG(t):
@@ -58,14 +63,16 @@ def p_bin_op_spec(p):
 def p_dst(p):
 	'''dst : indirect_reg
 	       | direct_reg
-	       | sum'''
+	       | sum
+	       | ADDRESS'''
 	p[0] = p[1]
 
 def p_src(p):
 	'''src : direct_reg
 	       | indirect_reg
 	       | sum
-	       | INTEGER'''
+	       | immediate
+	       | ADDRESS'''
 	p[0] = p[1]
 
 def p_indirect_reg(p):
@@ -94,7 +101,6 @@ def p_pre_dec_register(p):
 	'''pre_dec_register : '-' GENREG'''
 	p[0] = p[2]
 	p[0].set_pre_decrement()
-	
 
 def p_post_inc_register(p):
 	'''post_inc_register : GENREG '+' '''
@@ -107,6 +113,9 @@ def p_sum(p):
 	       | '@' '(' GENREG ',' GBR ')' '''
 	p[0] = ArgSum(p[3], p[5])
 
+def p_immediate(p):
+	'''immediate : '#' INTEGER'''
+	p[0] = ArgInt(p[2])
 
 ply.lex.lex()
 asm_parser = ply.yacc.yacc()
