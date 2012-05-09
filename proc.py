@@ -5,17 +5,17 @@ class Proc(object):
 	pass
 
 class SH7058(Proc):
-	def __init__(self):
-		self.GPR = store.RegFile(reset=True, function_init=False)
-		self.Mem = store.MemFile()
+	def __init__(self, function_reset=False):
+		self.GPR = store.RegFile(function_reset=function_reset)
+		self.Mem = store.MemFile(function_reset=function_reset)
 
-	def reset_init(self):
-		self.GPR.reset_init()
-		self.Mem.reset_init()
+	def reset(self):
+		self.GPR.reset()
+		self.Mem.reset()
 
-	def function_init(self):
-		self.GPR.function_init()
-		self.Mem.function_init()
+	def function_reset(self):
+		self.GPR.function_reset()
+		self.Mem.function_reset()
 
 	def __getitem__(self, key):
 		if isinstance(key, basestring):
@@ -41,7 +41,9 @@ class SH7058(Proc):
 	def execute(self, asm):
 		map(lambda a:a.pre_effect(self), asm.args)
 
-		if asm.instruction == 'add':
+		if asm.instruction == 'nop':
+			pass
+		elif asm.instruction == 'add':
 			v1 = asm.args[0].get_value(self)
 			v2 = asm.args[1].get_value(self)
 			asm.args[1].store_value(self, v1+v2)

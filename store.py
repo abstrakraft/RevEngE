@@ -6,44 +6,67 @@ class Store(object):
 		pass
 
 class RegFile(Store):
-	def __init__(self, reset=False, function_init=False):
+	def __init__(self, no_reset=False, function_reset=False, reg=None, marked=None):
 		super(RegFile, self).__init__()
-		self.reg = [expr.UndefinedValue() for r in xrange(16)]
+		if reg is None:
+			self.reg = [None]*16
+		else:
+			self.reg = reg
+		if marked is None:
+			self.marked = [False]*16
+		else:
+			self.marked = marked
 
-		if reset:
-			self.reset_init()
-		if function_init:
-			self.function_init()
+		if not no_reset:
+			if function_reset:
+				self.function_reset()
+			else:
+				self.reset()
 
-	def reset_init(self):
+	def reset(self):
 		for idx in xrange(16):
 			self[idx] = expr.UndefinedValue()
+		self.reset_marked()
 
-	def function_init(self):
+	def function_reset(self):
+		self.reset()
 		self[4] = expr.SymbolicValue('Arg1')
 		self[5] = expr.SymbolicValue('Arg2')
 		self[6] = expr.SymbolicValue('Arg3')
 		self[7] = expr.SymbolicValue('Arg4')
+		self.reset_marked()
+
+	def reset_marked(self):
+		for idx in xrange(16):
+			self.marked[idx] = False
 
 	def __getitem__(self, key):
 		return self.reg[key]
 
 	def __setitem__(self, key, value):
 		self.reg[key] = value
+		self.marked[key] = True
 
 	def __str__(self):
 		return '[' + ', '.join(map(str, self.reg)) + ']'
 
+	def __copy__(self):
+		return type(self)(no_reset=True, reg=self.reg, marked=self.marked)
+
 class MemFile(Store):
 	init_sp = 0xffffbfa0
 
-	def __init__(self):
+	def __init__(self, no_reset=False, function_reset=False):
 		super(MemFile, self).__init__()
 		self.definite_mem = {}
 		self.symbolic_mem = {}
 
-	def function_init(self):
-		pass
+	def reset(self):
+		self.definite_mem = {}
+		self.symbolic_mem = {}
+
+	def function_reset(self):
+		self.reset()
 
 	def initialize_mem(self):
 		pass

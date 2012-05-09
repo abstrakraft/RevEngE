@@ -13,14 +13,15 @@ class Block(object):
 def main():
 	#Alex = asm.AsmListing.import_file('alex_disassembly.asm')
 	#main_entry = (Alex[0].value << 16) | Alex[1].value
-	proc_state = proc.SH7058()
+	proc_state = proc.SH7058(function_reset=True)
 	test = asm.AsmListing.import_file('asm/test.asm')
 
-	proc_state.function_init()
 	for c in test.code:
 		proc_state.execute(c)
+
+	print '\n'.join(['r%d=%s;' % (idx, str(proc_state.GPR[idx])) for idx in range(16) if proc_state.GPR.marked[idx]])
 
 	return proc_state
 
 if __name__ == '__main__':
-	print main()
+	main()
