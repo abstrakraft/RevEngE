@@ -14,12 +14,16 @@ def main():
 	#Alex = asm.AsmListing.import_file('alex_disassembly.asm')
 	#main_entry = (Alex[0].value << 16) | Alex[1].value
 	proc_state = proc.SH7058(function_reset=True)
-	test = asm.AsmListing.import_file('asm/test.asm')
+	test = asm.AsmListing.import_file('asm/test1.asm')
+
+	output = []
 
 	for c in test.code:
-		proc_state.execute(c)
+		r = proc_state.execute(c)
+		if r:
+			output.extend(r)
 
-	print '\n'.join(['r%d=%s;' % (idx, str(proc_state.GPR[idx])) for idx in range(16) if proc_state.GPR.marked[idx]])
+	print '\n'.join(output + ['r%d=%s;' % (idx, str(proc_state.GPR[idx])) for idx in range(16) if proc_state.GPR.marked[idx]])
 
 	return proc_state
 

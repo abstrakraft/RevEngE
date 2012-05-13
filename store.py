@@ -77,7 +77,7 @@ class MemFile(Store):
 			if addr_val in self.definite_mem:
 				val = self.definite_mem[addr_val]
 			else:
-				val = expr.DereferenceOp(addr_val)
+				val = expr.DereferenceOp(address)
 		else:
 			if address in self.symbolic_mem:
 				val = self.symbolc_mem[address]

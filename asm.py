@@ -22,6 +22,9 @@ class AsmLine(object):
 		(inst, spec, args) = parse.asm_parser.parse(fields[2])
 		return cls(int(fields[0][:-1], 16), int(fields[1], 16), inst, spec, args, eval(fields[3]))
 
+	def __str__(self):
+		return self.export_listing()
+
 	def export_listing(self):
 		asm_string = self.export_string()
 		if self.attr == {}:
@@ -30,7 +33,7 @@ class AsmLine(object):
 			return '%8x:\t%.4x\t%s\t%s' % (self.address, self.val, asm_string, self.attr)
 
 	def export_string(self):
-		return self.instruction + (self.args and (' ' + ','.join(map(str, self.args))) or '')
+		return self.instruction + (self.spec and ('.' + self.spec) or '') + (self.args and (' ' + ','.join(map(str, self.args))) or '')
 
 class AsmListing(object):
 	def __init__(self, code):

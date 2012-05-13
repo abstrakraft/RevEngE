@@ -3,25 +3,32 @@ import ply.yacc
 
 import arg
 
-tokens = ('BIN_OP', 'TYPE_SPEC', 'INTEGER', 'ADDRESS', 'GENREG', 'PC', 'GBR')
-literals = '().,@+-'
+tokens = ('NUN_OP', 'UN_OP', 'BIN_OP', 'TYPE_SPEC', 'IMMEDIATE', 'ADDRESS', 'INTEGER', 'GENREG', 'PC', 'GBR')
+literals = '(),@+-#'
 t_ignore = ' \t'
 
-#t_UN_OP = r'(movt)|(cmp/(pl)|(pz))|(dt)|(tas.b)|(rotr|(cl)|(cr))|(shal|r)|(shll|r(2|8|(16))?)'
-t_BIN_OP = r'(mova?)|(swap)|(xtrct)|(add(c|v)?)|(cmp/(eq)|(hs)|(ge)|(hi)|(gt)|(str))|(div1|(0s)|s|u)|(exts|u)|(mac)|(mul(s|u)?)|(negc?)|(sub(c|v)?)|' + \
-	       r'(and)|(not)|(or)|(tst)|(xor)|(ldc|s)|(stc|s)'
-t_TYPE_SPEC = r'b|w|l'
+t_NUN_OP = r'nop'
+#t_UN_OP = r'(movt)|(cmp/((pl)|(pz)))|(dt)|(tas.b)|(rot(r|(cl)|(cr)))|(sha(l|r))|(shl(l|r)(2|8|(16))?)'
+t_UN_OP = r'(bsr)|(jsr)'
+t_BIN_OP = r'(mova?)|(swap)|(xtrct)|(add(c|v)?)|(cmp/((eq)|(hs)|(ge)|(hi)|(gt)|(str)))|(div(1|(0s)|s|u))|(ext(s|u))|(mac)|(mul(s|u)?)|(negc?)|(sub(c|v)?)|' + \
+	       r'(and)|(not)|(or)|(tst)|(xor)|(ld(c|s))|(st(c|s))'
+t_TYPE_SPEC = r'\.(b|w|l)'
 
 start = 'statement'
 
-def t_INTEGER(t):
-	'''[1-9][0-9]*'''
+def t_IMMEDIATE(t):
+	'''\#[0-9]+'''
 	t.value = arg.ArgInt(t.value)
 	return t
 
 def t_ADDRESS(t):
 	'''0x[0-9a-fA-F]+'''
-	t.value = arg.ArgMem(t.value)
+	t.value = arg.ArgMem(int(t.value, 0))
+	return t
+
+def t_INTEGER(t):
+	'''[0-9]+'''
+	t.value = arg.ArgInt(t.value)
 	return t
 
 def t_GENREG(t):
@@ -44,19 +51,34 @@ def t_error(t):
     t.lexer.skip(1)
 
 def p_statement(p):
-	'''statement : bin_op_statement'''
+	'''statement : nun_op_statement
+	             | un_op_statement
+	             | bin_op_statement'''
 	p[0] = p[1]
+
+def p_nun_op_statement(p):
+	'nun_op_statement : NUN_OP'''
+	p[0] = [p[1], None, ()]
+
+def p_un_op_statement(p):
+	'''un_op_statement : un_op_spec src'''
+	p[0] = p[1]
+	p[0].append((p[2],))
 
 def p_bin_op_statement(p):
 	'''bin_op_statement : bin_op_spec src ',' dst'''
 	p[0] = p[1]
 	p[0].append((p[2], p[4]))
 
+def p_un_op_spec(p):
+	'''un_op_spec : UN_OP'''
+	p[0] = [p[1], None]
+
 def p_bin_op_spec(p):
-	'''bin_op_spec : BIN_OP '.' TYPE_SPEC
+	'''bin_op_spec : BIN_OP TYPE_SPEC
 	               | BIN_OP'''
-	if len(p) == 4:
-		p[0] = [p[1], p[3]]
+	if len(p) == 3:
+		p[0] = [p[1], p[2][1:]]
 	else:
 		p[0] = [p[1], None]
 
@@ -71,7 +93,7 @@ def p_src(p):
 	'''src : direct_reg
 	       | indirect_reg
 	       | sum
-	       | immediate
+	       | IMMEDIATE
 	       | ADDRESS'''
 	p[0] = p[1]
 
@@ -112,10 +134,6 @@ def p_sum(p):
 	       | '@' '(' GENREG ',' GENREG ')'
 	       | '@' '(' GENREG ',' GBR ')' '''
 	p[0] = ArgSum(p[3], p[5])
-
-def p_immediate(p):
-	'''immediate : '#' INTEGER'''
-	p[0] = ArgInt(p[2])
 
 ply.lex.lex()
 asm_parser = ply.yacc.yacc()

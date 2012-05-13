@@ -9,13 +9,19 @@ class SH7058(Proc):
 		self.GPR = store.RegFile(function_reset=function_reset)
 		self.Mem = store.MemFile(function_reset=function_reset)
 
+		self.pre_delay_asm = None
+
 	def reset(self):
 		self.GPR.reset()
 		self.Mem.reset()
 
+		self.pre_delay_asm = None
+
 	def function_reset(self):
 		self.GPR.function_reset()
 		self.Mem.function_reset()
+
+		self.pre_delay_asm = None
 
 	def __getitem__(self, key):
 		if isinstance(key, basestring):
@@ -38,11 +44,23 @@ class SH7058(Proc):
 	def __str__(self):
 		return '<GPR = %s, Mem = %s>' % (self.GPR, self.Mem)
 
-	def execute(self, asm):
+	delay_slot_instructions = ['bsr']
+
+	def execute(self, asm, pre_delay=False):
+		if not pre_delay and asm.instruction in self.delay_slot_instructions:
+			self.pre_delay_asm = asm
+			return None
+
+		output = []
+
 		map(lambda a:a.pre_effect(self), asm.args)
 
 		if asm.instruction == 'nop':
 			pass
+		elif asm.instruction == 'bsr':
+			output.append('r0 = (%s)();' % str(asm.args[0].get_address(self)))
+		elif asm.instruction == 'jsr':
+			output.append('r0 = (%s)();' % str(asm.args[0].get_address(self)))
 		elif asm.instruction == 'add':
 			v1 = asm.args[0].get_value(self)
 			v2 = asm.args[1].get_value(self)
@@ -66,3 +84,11 @@ class SH7058(Proc):
 			raise NotImplementedError('instruction %s not implemented for execution' % asm.instruction)
 
 		map(lambda a:a.post_effect(self), asm.args)
+
+		if not pre_delay and self.pre_delay_asm:
+			r = self.execute(self.pre_delay_asm, pre_delay=True)
+			if r:
+				output.extend(r)
+			self.pre_delay_asm = None
+
+		return output

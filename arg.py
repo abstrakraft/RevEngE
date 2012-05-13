@@ -16,6 +16,9 @@ class ArgVal(object):
 	def get_value(self, proc_state):
 		raise Exception('abstract function')
 
+	def get_address(self, proc_state):
+		raise Exception('abstract function')
+
 class ArgInt(ArgVal):
 	def __init__(self, value):
 		super(ArgVal, self).__init__()
@@ -32,6 +35,9 @@ class ArgInt(ArgVal):
 	def get_value(self, proc_state):
 		return expr.NumericValue(self.value)
 
+	def get_address(self, proc_state):
+		raise TypeError('int has no address')
+
 	def __str__(self):
 		return str(self.value)
 
@@ -45,6 +51,9 @@ class ArgMem(ArgVal):
 
 	def get_value(self, proc_state):
 		return proc_state.Mem[self.address]
+
+	def get_address(self, proc_state):
+		return self.address
 
 	def __str__(self):
 		return hex(self.address.val)
@@ -85,6 +94,12 @@ class ArgReg(ArgVal):
 			return proc_state.Mem[tmp]
 		else:
 			return tmp
+
+	def get_address(self, proc_state):
+		if self.indirect:
+			return proc_state[self.val]
+		else:
+			raise TypeError('direct register has no address')
 
 	def __str__(self):
 		ret = ''
