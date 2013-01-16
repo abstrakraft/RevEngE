@@ -9,7 +9,7 @@ t_ignore = ' \t'
 
 t_NUN_OP = r'nop'
 #t_UN_OP = r'(movt)|(cmp/((pl)|(pz)))|(dt)|(tas.b)|(rot(r|(cl)|(cr)))|(sha(l|r))|(shl(l|r)(2|8|(16))?)'
-t_UN_OP = r'(bsr)|(jsr)'
+t_UN_OP = r'(bra)|(bsr)|(jsr)'
 t_BIN_OP = r'(mova?)|(swap)|(xtrct)|(add(c|v)?)|(cmp/((eq)|(hs)|(ge)|(hi)|(gt)|(str)))|(div(1|(0s)|s|u))|(ext(s|u))|(mac)|(mul(s|u)?)|(negc?)|(sub(c|v)?)|' + \
 	       r'(and)|(not)|(or)|(tst)|(xor)|(ld(c|s))|(st(c|s))'
 t_TYPE_SPEC = r'\.(b|w|l)'
@@ -136,6 +136,6 @@ def p_sum(p):
 	p[0] = ArgSum(p[3], p[5])
 
 ply.lex.lex()
-asm_parser = ply.yacc.yacc()
+parser = ply.yacc.yacc()#outputdir='parse_inst')
 
 #print parser.parse('mov.w R1,@R2')

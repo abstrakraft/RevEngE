@@ -1,5 +1,5 @@
 import sys
-import parse
+import parse_inst
 import expr
 
 class AsmLine(object):
@@ -19,7 +19,7 @@ class AsmLine(object):
 		elif fields[3] == "":
 			fields[3] = '{}'
 
-		(inst, spec, args) = parse.asm_parser.parse(fields[2])
+		(inst, spec, args) = parse_inst.parser.parse(fields[2])
 		return cls(int(fields[0][:-1], 16), int(fields[1], 16), inst, spec, args, eval(fields[3]))
 
 	def __str__(self):
@@ -41,6 +41,12 @@ class AsmListing(object):
 		self.map = {}
 		for c in self.code:
 			self.map[c.address] = c
+
+	def __getitem__(self, key):
+		if isinstance(key, slice):
+			return type(self)(self.code.__getitem__(key))
+		else:
+			return self.code[key]
 
 	@classmethod
 	def import_file(cls, file):
@@ -107,7 +113,6 @@ class AsmListing(object):
 	def mark_all_entry_points(self):
 		main = (code[0][1] << 16) | code[1][1]
 		code[main/2][3]['entry'] = 'main'
-		
 
 	def mark_entry_points(self, start):
 		pass
